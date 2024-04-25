@@ -1,0 +1,38 @@
+name: Deploy to GCP Cloud Run
+
+on:
+  push:
+    branches: [ "infra/deploy-to-cloudrun" ]
+
+jobs:
+
+    deploy:
+
+        runs-on: ubuntu-latest
+        env:
+          IMAGE_NAME_WEBAPP: gcr.io/${{ secrets.OAUI_GCP_PROJECT_ID }}/${{ secrets.OAUI_GCP_APP_NAME }}_webapp
+        steps:
+
+        - name: 'gcloud auth'
+          id: 'auth'
+          uses: 'google-github-actions/auth@v1'
+          with:
+            credentials_json: '${{ secrets.OAUI_GCP_CREDENTIALS }}'
+
+        - name: 'Set up Cloud SDK'
+          uses: 'google-github-actions/setup-gcloud@v1'
+  
+        - name: GCloud Docker auth
+          run: gcloud --quiet auth configure-docker
+
+        - name: Checkout repository
+          uses: actions/checkout@v2
+
+        - name: Build restapi docker image
+          run: docker build -f ${GITHUB_WORKSPACE}/Dockerfile -t $IMAGE_NAME_WEBAPP:$GITHUB_SHA ${GITHUB_WORKSPACE}
+
+        - name: Push webapp docker image
+          run: docker push $IMAGE_NAME_WEBAPP:$GITHUB_SHA
+
+        # - name: Deploy restapi docker image
+        #   run: gcloud run deploy ${{ secrets.GCP_APP_NAME }}_webapp --image=$IMAGE_NAME_WEBAPP:$GITHUB_SHA --region=us-central1 --project=${{ secrets.OAUI_GCP_PROJECT_ID }}

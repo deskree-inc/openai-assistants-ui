@@ -34,11 +34,11 @@ jobs:
         - name: Checkout repository
           uses: actions/checkout@v2
 
-        - name: Build restapi docker image
+        - name: Build webapp docker image
           run: docker build -t $IMAGE_NAME_WEBAPP ${GITHUB_WORKSPACE}
 
         - name: Push webapp docker image
           run: docker push $IMAGE_NAME_WEBAPP
 
-        # - name: Deploy restapi docker image
-        #   run: gcloud run deploy ${{ secrets.GCP_APP_NAME }} --image=$IMAGE_NAME_WEBAPP --region=us-east1 --project=${{ secrets.OAUI_GCP_PROJECT_ID }}
+        - name: Deploy restapi docker image
+          run: gcloud run deploy ${{ secrets.GCP_APP_NAME }} --image=$IMAGE_NAME_WEBAPP --region=us-east1 --project=${{ secrets.OAUI_GCP_PROJECT_ID }}

@@ -1,0 +1,44 @@
+name: Deploy to GCP Cloud Run & Artifacts
+
+on:
+  push:
+    branches: [ "master" ]
+
+jobs:
+
+    deploy:
+
+        runs-on: ubuntu-latest
+        env:
+          IMAGE_NAME_WEBAPP: us-east1-docker.pkg.dev/${{ secrets.OAUI_GCP_PROJECT_ID }}/gcf-artifacts/${{ secrets.OAUI_GCP_APP_NAME }}
+        steps:
+
+        # - name: 'gcloud auth'
+        #   id: 'auth'
+        #   uses: 'google-github-actions/auth@v1'
+        #   with:
+        #     credentials_json: '${{ secrets.OAUI_GCP_CREDENTIALS }}'
+
+        # - name: 'Set up Cloud SDK'
+        #   uses: 'google-github-actions/setup-gcloud@v1'
+        
+        - name: 'Create service-account file'
+          run: echo '${{ secrets.OAUI_GCP_CREDENTIALS }}' > ${GITHUB_WORKSPACE}/service_account.json
+
+        - name: 'Authenticate service account'
+          run: gcloud auth activate-service-account github-action@${{ secrets.OAUI_GCP_PROJECT_ID }}.iam.gserviceaccount.com --key-file=${GITHUB_WORKSPACE}/service_account.json --project=${{ secrets.OAUI_GCP_PROJECT_ID }}
+  
+        - name: GCloud Docker auth
+          run: gcloud auth configure-docker us-east1-docker.pkg.dev --quiet
+
+        - name: Checkout repository
+          uses: actions/checkout@v2
+
+        - name: Build webapp docker image
+          run: docker build -t $IMAGE_NAME_WEBAPP ${GITHUB_WORKSPACE}
+
+        - name: Push webapp docker image
+          run: docker push $IMAGE_NAME_WEBAPP
+
+        - name: Deploy restapi docker image
+          run: gcloud run deploy ${{ secrets.OAUI_GCP_APP_NAME }} --image=$IMAGE_NAME_WEBAPP --region=us-east1 --project=${{ secrets.OAUI_GCP_PROJECT_ID }}
